@@ -2,8 +2,6 @@
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 const FEAR_GREED_API = 'https://api.alternative.me/fng/?limit=1';
 
-// Test comment: Workflow verification - testing bidirectional git operations
-
 // Refresh interval in milliseconds (60 seconds)
 const REFRESH_INTERVAL = 60000;
 
@@ -70,13 +68,13 @@ async function fetchAllData() {
 async function fetchBTCData() {
     try {
         const response = await fetch(
-            `${COINGECKO_API}/simple/price?ids=bitcoin&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true&include_high_low_24h=true`
+            `${COINGECKO_API}/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=1&page=1&sparkline=false&price_change_percentage=24h`
         );
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
-        return data.bitcoin;
+        return data[0]; // Returns array with single bitcoin object
     } catch (error) {
         console.error('Error fetching BTC data:', error);
         return null;
@@ -120,11 +118,11 @@ function updateBTCPrice(btcData) {
     if (!btcData) return;
 
     // Price
-    const price = btcData.usd;
+    const price = btcData.current_price;
     btcPriceEl.textContent = formatCurrency(price);
 
     // 24h Change
-    const change24h = btcData.usd_24h_change;
+    const change24h = btcData.price_change_percentage_24h;
     const changeElement = priceChange24hEl;
 
     changeElement.textContent = `${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%`;
@@ -134,16 +132,16 @@ function updateBTCPrice(btcData) {
     }
 
     // 24h High/Low
-    if (btcData.usd_24h_high) {
-        high24hEl.textContent = `$${formatCurrency(btcData.usd_24h_high)}`;
+    if (btcData.high_24h) {
+        high24hEl.textContent = `$${formatCurrency(btcData.high_24h)}`;
     }
-    if (btcData.usd_24h_low) {
-        low24hEl.textContent = `$${formatCurrency(btcData.usd_24h_low)}`;
+    if (btcData.low_24h) {
+        low24hEl.textContent = `$${formatCurrency(btcData.low_24h)}`;
     }
 
     // Market Cap
-    if (btcData.usd_market_cap) {
-        marketCapEl.textContent = formatMarketCap(btcData.usd_market_cap);
+    if (btcData.market_cap) {
+        marketCapEl.textContent = formatMarketCap(btcData.market_cap);
     }
 }
 
@@ -151,7 +149,8 @@ function updateBTCPrice(btcData) {
 function updateBTCDominance(dominanceData) {
     if (!dominanceData) return;
 
-    const btcDominance = dominanceData.btc || 0;
+    // dominanceData is already the percentage value
+    const btcDominance = dominanceData || 0;
     btcDominanceEl.textContent = `${btcDominance.toFixed(2)}%`;
 }
 
