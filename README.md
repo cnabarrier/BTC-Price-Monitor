@@ -61,6 +61,16 @@ BTC-Price-Monitor/
 - Local storage for preferences
 - Additional data points and indicators
 
+## Contributing Guidelines
+
+This is a collaborative project with AI agents and human developers.
+
+**For AI Agents:** Please read `CONTRIBUTING.md` for standardized workflow, branch naming, and commit message format.
+
+**For Humans:** See `WORKFLOW.md` for managing branches and merging features.
+
+All contributions must follow the standardized commit format with `[TYPE]` prefix.
+
 ## License
 
 This project is open source and available for personal and educational use.
