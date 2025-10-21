@@ -17,6 +17,8 @@ const marketCapEl = document.getElementById('marketCap');
 const lastUpdatedEl = document.getElementById('lastUpdated');
 const refreshBtn = document.getElementById('refreshBtn');
 const statusIndicator = document.getElementById('statusIndicator');
+const themeToggleBtn = document.getElementById('themeToggle');
+const themeIcon = document.querySelector('.theme-icon');
 
 // State
 let lastUpdateTime = null;
@@ -25,6 +27,7 @@ let autoRefreshInterval = null;
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     console.log('BTC Price Monitor initialized');
+    initializeTheme();
     fetchAllData();
     startAutoRefresh();
     setupEventListeners();
@@ -39,6 +42,10 @@ function setupEventListeners() {
             fetchAllData();
         }, 10);
     });
+
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', toggleTheme);
+    }
 }
 
 // Fetch all data
@@ -253,6 +260,30 @@ function formatTime(date) {
         second: '2-digit',
         hour12: true
     }).format(date);
+}
+
+// Theme Management
+function initializeTheme() {
+    const savedTheme = localStorage.getItem('btc-monitor-theme') || 'dark';
+    setTheme(savedTheme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.body.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+}
+
+function setTheme(theme) {
+    if (theme === 'light') {
+        document.body.setAttribute('data-theme', 'light');
+        if (themeIcon) themeIcon.textContent = '☀️';
+    } else {
+        document.body.removeAttribute('data-theme');
+        if (themeIcon) themeIcon.textContent = '🌙';
+    }
+    localStorage.setItem('btc-monitor-theme', theme);
+    console.log(`Theme set to: ${theme}`);
 }
 
 // Auto-refresh
