@@ -3,9 +3,6 @@ const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 const FEAR_GREED_API = 'https://api.alternative.me/fng/?limit=1';
 const FEAR_GREED_HISTORY_API = 'https://api.alternative.me/fng/?limit=370';
 
-// CORS Proxy options (uses reliable proxy)
-const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-
 // Refresh interval in milliseconds (60 seconds)
 const REFRESH_INTERVAL = 60000;
 
@@ -112,16 +109,19 @@ async function fetchAllData() {
 async function fetchBTCData() {
     try {
         const url = `${COINGECKO_API}/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=1&page=1&sparkline=false&price_change_percentage=24h`;
-        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + encodeURIComponent(url) : url;
 
-        console.log('Fetching BTC data from:', fetchUrl.substring(0, 80) + '...');
-        const response = await fetch(fetchUrl);
+        console.log('Fetching BTC data...');
+        const response = await fetch(url);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
-        console.log('BTC data received:', data);
-        return data[0];
+        console.log('BTC data received, length:', data.length, data);
+
+        if (Array.isArray(data) && data.length > 0) {
+            return data[0];
+        }
+        return null;
     } catch (error) {
         console.error('Error fetching BTC data:', error);
         return null;
@@ -132,13 +132,15 @@ async function fetchBTCData() {
 async function fetchBTCDominance() {
     try {
         const url = `${COINGECKO_API}/global`;
-        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + encodeURIComponent(url) : url;
+        console.log('Fetching BTC dominance...');
 
-        const response = await fetch(fetchUrl);
+        const response = await fetch(url);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
+        console.log('Dominance data received:', data);
+
         // CoinGecko /global endpoint returns market_cap_percentage with btc property
         const dominance = data.data?.market_cap_percentage?.btc;
         if (dominance === undefined || dominance === null) {
@@ -155,12 +157,13 @@ async function fetchBTCDominance() {
 // Fetch Fear & Greed Index from Alternative.me
 async function fetchFearGreedIndex() {
     try {
-        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + encodeURIComponent(FEAR_GREED_API) : FEAR_GREED_API;
-        const response = await fetch(fetchUrl);
+        console.log('Fetching Fear & Greed...');
+        const response = await fetch(FEAR_GREED_API);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
+        console.log('Fear & Greed data received:', data);
         return data.data[0];
     } catch (error) {
         console.error('Error fetching Fear & Greed Index:', error);
@@ -171,8 +174,7 @@ async function fetchFearGreedIndex() {
 // Fetch Fear & Greed History
 async function fetchFearGreedHistory() {
     try {
-        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + encodeURIComponent(FEAR_GREED_HISTORY_API) : FEAR_GREED_HISTORY_API;
-        const response = await fetch(fetchUrl);
+        const response = await fetch(FEAR_GREED_HISTORY_API);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
