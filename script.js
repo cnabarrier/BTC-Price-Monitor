@@ -1,6 +1,7 @@
 // API Configuration
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 const FEAR_GREED_API = 'https://api.alternative.me/fng/?limit=1';
+const FEAR_GREED_API_HISTORICAL = 'https://api.alternative.me/fng/?limit=370'; // ~1 year of data
 
 // Refresh interval in milliseconds (60 seconds)
 const REFRESH_INTERVAL = 60000;
@@ -52,15 +53,17 @@ function setupEventListeners() {
 async function fetchAllData() {
     try {
         setStatus('loading');
-        const [btcData, dominanceData, fearGreedData] = await Promise.all([
+        const [btcData, dominanceData, fearGreedData, fearGreedHistorical] = await Promise.all([
             fetchBTCData(),
             fetchBTCDominance(),
-            fetchFearGreedIndex()
+            fetchFearGreedIndex(),
+            fetchFearGreedHistorical()
         ]);
 
         if (btcData) updateBTCPrice(btcData);
         if (dominanceData) updateBTCDominance(dominanceData);
         if (fearGreedData) updateFearGreedIndex(fearGreedData);
+        if (fearGreedHistorical) updateFearGreedTimeline(fearGreedHistorical);
 
         updateLastUpdated();
         setStatus('active');
@@ -126,6 +129,21 @@ async function fetchFearGreedIndex() {
     }
 }
 
+// Fetch historical Fear & Greed Index data
+async function fetchFearGreedHistorical() {
+    try {
+        const response = await fetch(FEAR_GREED_API_HISTORICAL);
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        const data = await response.json();
+        return data.data; // Returns array of historical data
+    } catch (error) {
+        console.error('Error fetching historical Fear & Greed Index:', error);
+        return null;
+    }
+}
+
 // Update BTC Price Display
 function updateBTCPrice(btcData) {
     if (!btcData) return;
@@ -183,6 +201,9 @@ function updateFearGreedIndex(fearGreedData) {
     fearGreedValueEl.textContent = value;
     fearGreedLabelEl.textContent = classification;
 
+    // Render the gauge
+    renderFearGreedGauge(value);
+
     // Color code the fear and greed index
     updateFearGreedColor(value);
 }
@@ -205,6 +226,184 @@ function updateFearGreedColor(value) {
     } else {
         fearGreedCard.style.borderTopColor = '#2ecc71'; // Green
     }
+}
+
+// Update Fear & Greed Timeline
+function updateFearGreedTimeline(historicalData) {
+    if (!historicalData || !Array.isArray(historicalData)) return;
+
+    // Helper function to find data by days ago
+    const findDataByDaysAgo = (daysAgo) => {
+        // The API returns data sorted by date (most recent first)
+        // Index 0 is today, index 1 is yesterday, etc.
+        if (daysAgo < historicalData.length) {
+            return historicalData[daysAgo];
+        }
+        return null;
+    };
+
+    // Helper function to format timeline value
+    const formatTimelineValue = (data) => {
+        if (!data) return '--';
+        const value = parseInt(data.value);
+        const classification = data.value_classification;
+        return `${classification} (${value})`;
+    };
+
+    // Update timeline items
+    const previousClose = findDataByDaysAgo(1); // Yesterday
+    const oneWeekAgo = findDataByDaysAgo(7); // 7 days ago
+    const oneMonthAgo = findDataByDaysAgo(30); // 30 days ago
+    const oneYearAgo = findDataByDaysAgo(365); // 365 days ago
+
+    document.getElementById('fearGreedPrevious').textContent = formatTimelineValue(previousClose);
+    document.getElementById('fearGreed1Week').textContent = formatTimelineValue(oneWeekAgo);
+    document.getElementById('fearGreed1Month').textContent = formatTimelineValue(oneMonthAgo);
+    document.getElementById('fearGreed1Year').textContent = formatTimelineValue(oneYearAgo);
+
+    // Color code timeline items based on sentiment
+    colorCodeTimelineItem('fearGreedPrevious', previousClose);
+    colorCodeTimelineItem('fearGreed1Week', oneWeekAgo);
+    colorCodeTimelineItem('fearGreed1Month', oneMonthAgo);
+    colorCodeTimelineItem('fearGreed1Year', oneYearAgo);
+}
+
+// Color code timeline item based on value
+function colorCodeTimelineItem(elementId, data) {
+    if (!data) return;
+
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    const value = parseInt(data.value);
+    const parent = element.closest('.timeline-item');
+    if (!parent) return;
+
+    let color = '#f7931a'; // Default
+
+    if (value <= 25) {
+        color = '#e74c3c'; // Extreme Fear - Red
+    } else if (value <= 46) {
+        color = '#f39c12'; // Fear - Orange
+    } else if (value <= 54) {
+        color = '#f1c40f'; // Neutral - Yellow
+    } else if (value <= 75) {
+        color = '#27ae60'; // Greed - Light Green
+    } else {
+        color = '#2ecc71'; // Extreme Greed - Green
+    }
+
+    parent.style.borderLeftColor = color;
+}
+
+// Render the semi-circular Fear & Greed gauge
+function renderFearGreedGauge(value) {
+    const svg = document.getElementById('fearGreedGauge');
+    if (!svg) return;
+
+    // Clear existing content
+    svg.innerHTML = '';
+
+    const centerX = 100;
+    const centerY = 100;
+    const radius = 80;
+    const strokeWidth = 20;
+
+    // Define gauge segments: [startValue, endValue, color, label]
+    const segments = [
+        { start: 0, end: 25, color: '#e74c3c', label: 'Extreme Fear' },
+        { start: 25, end: 46, color: '#f39c12', label: 'Fear' },
+        { start: 46, end: 54, color: '#f1c40f', label: 'Neutral' },
+        { start: 54, end: 75, color: '#27ae60', label: 'Greed' },
+        { start: 75, end: 100, color: '#2ecc71', label: 'Extreme Greed' }
+    ];
+
+    // Create gauge segments
+    segments.forEach(segment => {
+        const startAngle = valueToAngle(segment.start);
+        const endAngle = valueToAngle(segment.end);
+        const path = createArcPath(centerX, centerY, radius, startAngle, endAngle);
+
+        const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathElement.setAttribute('d', path);
+        pathElement.setAttribute('fill', 'none');
+        pathElement.setAttribute('stroke', segment.color);
+        pathElement.setAttribute('stroke-width', strokeWidth);
+        pathElement.setAttribute('stroke-linecap', 'round');
+        pathElement.setAttribute('class', 'gauge-segment');
+
+        // Add title for accessibility
+        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        title.textContent = `${segment.label}: ${segment.start}-${segment.end}`;
+        pathElement.appendChild(title);
+
+        svg.appendChild(pathElement);
+    });
+
+    // Draw needle
+    const needleAngle = valueToAngle(value);
+    const needleLength = radius - strokeWidth / 2;
+    const needleEndX = centerX + needleLength * Math.cos(needleAngle);
+    const needleEndY = centerY + needleLength * Math.sin(needleAngle);
+
+    // Needle line
+    const needle = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    needle.setAttribute('x1', centerX);
+    needle.setAttribute('y1', centerY);
+    needle.setAttribute('x2', needleEndX);
+    needle.setAttribute('y2', needleEndY);
+    needle.setAttribute('stroke', '#f7931a');
+    needle.setAttribute('stroke-width', '3');
+    needle.setAttribute('stroke-linecap', 'round');
+    needle.setAttribute('class', 'gauge-needle');
+    svg.appendChild(needle);
+
+    // Needle center circle
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', centerX);
+    circle.setAttribute('cy', centerY);
+    circle.setAttribute('r', '6');
+    circle.setAttribute('fill', '#f7931a');
+    svg.appendChild(circle);
+
+    // Add segment labels
+    const labelRadius = radius + 15;
+    segments.forEach(segment => {
+        const midValue = (segment.start + segment.end) / 2;
+        const midAngle = valueToAngle(midValue);
+        const labelX = centerX + labelRadius * Math.cos(midAngle);
+        const labelY = centerY + labelRadius * Math.sin(midAngle);
+
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', labelX);
+        text.setAttribute('y', labelY);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('dominant-baseline', 'middle');
+        text.setAttribute('fill', 'var(--text-secondary)');
+        text.setAttribute('font-size', '8');
+        text.setAttribute('font-weight', '600');
+        text.textContent = segment.label.split(' ')[segment.label.split(' ').length - 1]; // Last word only
+        svg.appendChild(text);
+    });
+}
+
+// Convert value (0-100) to angle in radians for semi-circle
+function valueToAngle(value) {
+    // Map 0-100 to π (180°) to 0 (for left-to-right arc)
+    // Starting from left (π radians) to right (0 radians)
+    return Math.PI - (value / 100) * Math.PI;
+}
+
+// Create SVG arc path
+function createArcPath(centerX, centerY, radius, startAngle, endAngle) {
+    const startX = centerX + radius * Math.cos(startAngle);
+    const startY = centerY + radius * Math.sin(startAngle);
+    const endX = centerX + radius * Math.cos(endAngle);
+    const endY = centerY + radius * Math.sin(endAngle);
+
+    const largeArcFlag = Math.abs(endAngle - startAngle) > Math.PI ? 1 : 0;
+
+    return `M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`;
 }
 
 // Update Last Updated Time

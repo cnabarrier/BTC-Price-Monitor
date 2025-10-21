@@ -49,12 +49,39 @@
                 </div>
 
                 <!-- Fear & Greed Index Card -->
-                <div class="card stat-card">
+                <div class="card fear-greed-card">
                     <div class="card-header">
                         <h3>Fear & Greed Index</h3>
                     </div>
-                    <div class="stat-value" id="fearGreedValue">--</div>
-                    <div class="stat-label" id="fearGreedLabel">--</div>
+                    <div class="fear-greed-content">
+                        <div class="gauge-container">
+                            <svg class="gauge-svg" viewBox="0 0 200 120" id="fearGreedGauge">
+                                <!-- Gauge segments will be drawn here -->
+                            </svg>
+                            <div class="gauge-center-value">
+                                <div class="center-value" id="fearGreedValue">--</div>
+                                <div class="center-label" id="fearGreedLabel">--</div>
+                            </div>
+                        </div>
+                        <div class="timeline-container">
+                            <div class="timeline-item">
+                                <span class="timeline-label">Previous close</span>
+                                <span class="timeline-value" id="fearGreedPrevious">--</span>
+                            </div>
+                            <div class="timeline-item">
+                                <span class="timeline-label">1 week ago</span>
+                                <span class="timeline-value" id="fearGreed1Week">--</span>
+                            </div>
+                            <div class="timeline-item">
+                                <span class="timeline-label">1 month ago</span>
+                                <span class="timeline-value" id="fearGreed1Month">--</span>
+                            </div>
+                            <div class="timeline-item">
+                                <span class="timeline-label">1 year ago</span>
+                                <span class="timeline-value" id="fearGreed1Year">--</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 24h High/Low Card -->

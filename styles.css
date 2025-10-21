@@ -345,6 +345,107 @@ footer {
     margin-top: 40px;
 }
 
+/* Fear & Greed Gauge */
+.fear-greed-card {
+    grid-column: span 2;
+}
+
+.fear-greed-content {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+}
+
+.gauge-container {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+}
+
+.gauge-svg {
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+}
+
+.gauge-center-value {
+    position: absolute;
+    bottom: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+}
+
+.center-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+.center-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    text-transform: capitalize;
+}
+
+.timeline-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 8px 0;
+}
+
+.timeline-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(247, 147, 26, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.timeline-item:hover {
+    background: rgba(247, 147, 26, 0.1);
+    border-left-color: var(--primary-color);
+}
+
+.timeline-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.timeline-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Gauge segments colors */
+.gauge-segment {
+    transition: opacity 0.3s ease;
+}
+
+.gauge-segment:hover {
+    opacity: 0.8;
+}
+
+.gauge-needle {
+    transition: transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+    transform-origin: center;
+}
+
 /* Error State */
 .error {
     padding: 16px;
@@ -388,6 +489,24 @@ footer {
         width: 44px;
         height: 44px;
         font-size: 1.3rem;
+    }
+
+    .fear-greed-card {
+        grid-column: span 1;
+    }
+
+    .fear-greed-content {
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .gauge-container {
+        min-height: 150px;
+    }
+
+    .timeline-container {
+        width: 100%;
+        gap: 12px;
     }
 }
 
@@ -435,5 +554,25 @@ footer {
         width: 40px;
         height: 40px;
         font-size: 1.2rem;
+    }
+
+    .center-value {
+        font-size: 2rem;
+    }
+
+    .gauge-container {
+        min-height: 120px;
+    }
+
+    .timeline-item {
+        padding: 10px 12px;
+    }
+
+    .timeline-label {
+        font-size: 0.8rem;
+    }
+
+    .timeline-value {
+        font-size: 0.9rem;
     }
 }
