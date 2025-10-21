@@ -91,7 +91,13 @@ async function fetchBTCDominance() {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
-        return data.data.btc_market_cap_percentage;
+        // CoinGecko returns btc_market_cap_percentage as a decimal value in the data object
+        const dominance = data.data?.btc_market_cap_percentage;
+        if (dominance === undefined || dominance === null) {
+            console.warn('BTC dominance data not available');
+            return null;
+        }
+        return dominance;
     } catch (error) {
         console.error('Error fetching BTC dominance:', error);
         return null;
@@ -147,10 +153,16 @@ function updateBTCPrice(btcData) {
 
 // Update BTC Dominance Display
 function updateBTCDominance(dominanceData) {
-    if (!dominanceData) return;
+    if (dominanceData === null || dominanceData === undefined) return;
 
-    // dominanceData is already the percentage value
-    const btcDominance = dominanceData || 0;
+    // dominanceData is the percentage value from CoinGecko /global API
+    const btcDominance = typeof dominanceData === 'number' ? dominanceData : parseFloat(dominanceData);
+
+    if (isNaN(btcDominance)) {
+        console.warn('Invalid BTC dominance value:', dominanceData);
+        return;
+    }
+
     btcDominanceEl.textContent = `${btcDominance.toFixed(2)}%`;
 }
 
