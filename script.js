@@ -3,6 +3,9 @@ const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 const FEAR_GREED_API = 'https://api.alternative.me/fng/?limit=1';
 const FEAR_GREED_HISTORY_API = 'https://api.alternative.me/fng/?limit=370';
 
+// CORS Proxy for local file:// protocol (only used when needed)
+const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
+
 // Refresh interval in milliseconds (60 seconds)
 const REFRESH_INTERVAL = 60000;
 
@@ -93,9 +96,10 @@ async function fetchAllData() {
 // Fetch BTC Price Data from CoinGecko
 async function fetchBTCData() {
     try {
-        const response = await fetch(
-            `${COINGECKO_API}/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=1&page=1&sparkline=false&price_change_percentage=24h`
-        );
+        const url = `${COINGECKO_API}/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=1&page=1&sparkline=false&price_change_percentage=24h`;
+        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + url : url;
+
+        const response = await fetch(fetchUrl);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
@@ -110,9 +114,10 @@ async function fetchBTCData() {
 // Fetch BTC Dominance from CoinGecko
 async function fetchBTCDominance() {
     try {
-        const response = await fetch(
-            `${COINGECKO_API}/global`
-        );
+        const url = `${COINGECKO_API}/global`;
+        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + url : url;
+
+        const response = await fetch(fetchUrl);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
@@ -133,7 +138,8 @@ async function fetchBTCDominance() {
 // Fetch Fear & Greed Index from Alternative.me
 async function fetchFearGreedIndex() {
     try {
-        const response = await fetch(FEAR_GREED_API);
+        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + FEAR_GREED_API : FEAR_GREED_API;
+        const response = await fetch(fetchUrl);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
@@ -148,7 +154,8 @@ async function fetchFearGreedIndex() {
 // Fetch Fear & Greed History
 async function fetchFearGreedHistory() {
     try {
-        const response = await fetch(FEAR_GREED_HISTORY_API);
+        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + FEAR_GREED_HISTORY_API : FEAR_GREED_HISTORY_API;
+        const response = await fetch(fetchUrl);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
@@ -208,180 +215,22 @@ function updateBTCDominance(dominanceData) {
 
 // Update Fear & Greed Display
 function updateFearGreedDisplay(fearGreedData) {
-    if (!fearGreedData && currentView === 'overview') return;
+    if (!fearGreedData) return;
 
-    if (currentView === 'overview') {
-        displayGaugeOverview(fearGreedData);
-    } else {
-        displayTimelineView();
-    }
-}
-
-// Display Gauge Overview
-function displayGaugeOverview(fearGreedData) {
     const value = parseInt(fearGreedData.value);
     const classification = fearGreedData.value_classification;
 
     fearGreedValueEl.textContent = value;
     fearGreedLabelEl.textContent = classification;
 
-    // Render gauge
-    renderFearGreedGauge(value);
-}
-
-// Render Fear & Greed Gauge
-function renderFearGreedGauge(value) {
-    const svg = fearGreedGaugeEl;
-    svg.innerHTML = ''; // Clear previous gauge
-
-    const centerX = 100;
-    const centerY = 100;
-    const radius = 80;
-    const startAngle = 180; // Left side (π radians)
-    const endAngle = 0; // Right side
-
-    // Create segment groups
-    const segments = [
-        { name: 'Extreme Fear', range: [0, 25], className: 'gauge-extreme-fear', startDeg: 180, endDeg: 144 },
-        { name: 'Fear', range: [25, 46], className: 'gauge-fear', startDeg: 144, endDeg: 110.4 },
-        { name: 'Neutral', range: [46, 54], className: 'gauge-neutral', startDeg: 110.4, endDeg: 93.6 },
-        { name: 'Greed', range: [54, 75], className: 'gauge-greed', startDeg: 93.6, endDeg: 39.6 },
-        { name: 'Extreme Greed', range: [75, 100], className: 'gauge-extreme-greed', startDeg: 39.6, endDeg: 0 }
-    ];
-
-    // Draw segments
-    segments.forEach(segment => {
-        const path = createArcPath(centerX, centerY, radius, segment.startDeg, segment.endDeg);
-        const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        pathEl.setAttribute('d', path);
-        pathEl.setAttribute('class', `gauge-segment ${segment.className}`);
-        pathEl.setAttribute('fill-opacity', '1');
-        svg.appendChild(pathEl);
-    });
-
-    // Draw tick marks and labels
-    drawTickMarks(svg, centerX, centerY, radius);
-
-    // Draw needle
-    const needleAngle = 180 - (value * 1.8); // Map 0-100 to 180-0 degrees
-    const needleLength = radius - 15;
-    const needleEndX = centerX + needleLength * Math.cos((needleAngle * Math.PI) / 180);
-    const needleEndY = centerY + needleLength * Math.sin((needleAngle * Math.PI) / 180);
-
-    const needle = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    needle.setAttribute('x1', centerX);
-    needle.setAttribute('y1', centerY);
-    needle.setAttribute('x2', needleEndX);
-    needle.setAttribute('y2', needleEndY);
-    needle.setAttribute('class', 'gauge-needle');
-    needle.setAttribute('id', 'fearGreedNeedle');
-    svg.appendChild(needle);
-
-    // Draw center hub
-    const hubCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    hubCircle.setAttribute('cx', centerX);
-    hubCircle.setAttribute('cy', centerY);
-    hubCircle.setAttribute('r', '8');
-    hubCircle.setAttribute('class', 'gauge-hub-circle');
-    svg.appendChild(hubCircle);
-}
-
-// Create Arc Path for gauge segment
-function createArcPath(centerX, centerY, radius, startDeg, endDeg) {
-    const startRad = (startDeg * Math.PI) / 180;
-    const endRad = (endDeg * Math.PI) / 180;
-
-    const x1 = centerX + radius * Math.cos(startRad);
-    const y1 = centerY + radius * Math.sin(startRad);
-    const x2 = centerX + radius * Math.cos(endRad);
-    const y2 = centerY + radius * Math.sin(endRad);
-
-    const largeArc = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
-
-    return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 0 ${x2} ${y2}`;
-}
-
-// Draw tick marks
-function drawTickMarks(svg, centerX, centerY, radius) {
-    const tickRadius = radius + 10;
-    const labelRadius = radius + 25;
-
-    // Draw 5-point increments
-    for (let i = 0; i <= 100; i += 5) {
-        const angle = 180 - (i * 1.8); // Map to degrees
-        const rad = (angle * Math.PI) / 180;
-
-        // Every 25 points, draw longer tick and label
-        if (i % 25 === 0) {
-            const x1 = centerX + (radius - 8) * Math.cos(rad);
-            const y1 = centerY + (radius - 8) * Math.sin(rad);
-            const x2 = centerX + (radius + 8) * Math.cos(rad);
-            const y2 = centerY + (radius + 8) * Math.sin(rad);
-
-            const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            tick.setAttribute('x1', x1);
-            tick.setAttribute('y1', y1);
-            tick.setAttribute('x2', x2);
-            tick.setAttribute('y2', y2);
-            tick.setAttribute('class', 'gauge-ticks');
-            svg.appendChild(tick);
-
-            // Add label
-            const labelX = centerX + labelRadius * Math.cos(rad);
-            const labelY = centerY + labelRadius * Math.sin(rad);
-            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', labelX);
-            text.setAttribute('y', labelY);
-            text.setAttribute('class', 'gauge-tick-label');
-            text.textContent = i;
-            svg.appendChild(text);
-        }
+    // Update slider knob position (0-100 maps to 0-100% width)
+    const knobEl = document.getElementById('sliderKnob');
+    if (knobEl) {
+        const knobTrack = knobEl.parentElement;
+        const trackWidth = knobTrack.offsetWidth;
+        const knobPosition = (value / 100) * (trackWidth - 24); // 24px is knob width
+        knobEl.style.left = `calc(${value}% - 12px)`; // Center the knob
     }
-}
-
-// Display Timeline View
-function displayTimelineView() {
-    const timelineContainer = document.querySelector('.timeline-container');
-    if (!timelineContainer) return;
-
-    // Get specific historical points
-    const current = fearGreedHistory[0]; // Today
-    const prevClose = fearGreedHistory[1]; // Yesterday
-    const oneWeekAgo = fearGreedHistory[7]; // 1 week
-    const oneMonthAgo = fearGreedHistory[30]; // 1 month
-    const oneYearAgo = fearGreedHistory[365]; // 1 year (or closest available)
-
-    // Update timeline items
-    updateTimelineItem(document.getElementById('fearGreedPrevious'), prevClose);
-    updateTimelineItem(document.getElementById('fearGreed1Week'), oneWeekAgo);
-    updateTimelineItem(document.getElementById('fearGreed1Month'), oneMonthAgo);
-    updateTimelineItem(document.getElementById('fearGreed1Year'), oneYearAgo);
-}
-
-// Update Timeline Item
-function updateTimelineItem(element, data) {
-    if (!element || !data) {
-        if (element) element.innerHTML = '<span class="timeline-value-text">--</span>';
-        return;
-    }
-
-    const value = parseInt(data.value);
-    const classification = data.value_classification;
-    const badgeClass = getSentimentBadgeClass(value);
-
-    element.innerHTML = `
-        <span class="timeline-value-text">${value}</span>
-        <span class="sentiment-badge ${badgeClass}">${classification}</span>
-    `;
-}
-
-// Get Sentiment Badge Class
-function getSentimentBadgeClass(value) {
-    if (value <= 25) return 'badge-extreme-fear';
-    if (value <= 46) return 'badge-fear';
-    if (value <= 54) return 'badge-neutral';
-    if (value <= 75) return 'badge-greed';
-    return 'badge-extreme-greed';
 }
 
 // Update Last Updated Time

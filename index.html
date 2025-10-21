@@ -52,38 +52,29 @@
                 <div class="card fear-greed-card">
                     <div class="card-header">
                         <h3>Fear & Greed Index</h3>
-                        <div class="view-toggle">
-                            <button class="toggle-btn active" data-view="overview">Overview</button>
-                            <button class="toggle-btn" data-view="timeline">Timeline</button>
-                        </div>
                     </div>
                     <div class="fear-greed-content">
-                        <div class="gauge-container">
-                            <svg class="gauge-svg" viewBox="0 0 200 120" id="fearGreedGauge">
-                                <!-- Gauge segments will be drawn here -->
-                            </svg>
-                            <div class="gauge-center-value">
-                                <div class="center-value" id="fearGreedValue">--</div>
-                                <div class="center-label" id="fearGreedLabel">--</div>
+                        <!-- Minimal Horizontal Slider -->
+                        <div class="slider-container">
+                            <div class="slider-track">
+                                <!-- Left tick mark -->
+                                <div class="tick-mark left"></div>
+
+                                <!-- Center knob -->
+                                <div class="slider-knob" id="sliderKnob"></div>
+
+                                <!-- Right accent bar -->
+                                <div class="accent-bar"></div>
                             </div>
-                        </div>
-                        <div class="timeline-container">
-                            <div class="timeline-item">
-                                <span class="timeline-label">Previous close</span>
-                                <span class="timeline-value" id="fearGreedPrevious">--</span>
+
+                            <!-- Value display -->
+                            <div class="value-display">
+                                <span class="main-value" id="fearGreedValue">--</span>
+                                <span class="superscript">¹</span>
                             </div>
-                            <div class="timeline-item">
-                                <span class="timeline-label">1 week ago</span>
-                                <span class="timeline-value" id="fearGreed1Week">--</span>
-                            </div>
-                            <div class="timeline-item">
-                                <span class="timeline-label">1 month ago</span>
-                                <span class="timeline-value" id="fearGreed1Month">--</span>
-                            </div>
-                            <div class="timeline-item">
-                                <span class="timeline-label">1 year ago</span>
-                                <span class="timeline-value" id="fearGreed1Year">--</span>
-                            </div>
+
+                            <!-- Sentiment label -->
+                            <div class="sentiment-label" id="fearGreedLabel">--</div>
                         </div>
                     </div>
                 </div>
