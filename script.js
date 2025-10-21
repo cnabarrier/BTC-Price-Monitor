@@ -3,8 +3,8 @@ const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 const FEAR_GREED_API = 'https://api.alternative.me/fng/?limit=1';
 const FEAR_GREED_HISTORY_API = 'https://api.alternative.me/fng/?limit=370';
 
-// CORS Proxy for local file:// protocol (only used when needed)
-const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
+// CORS Proxy options (uses reliable proxy)
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
 // Refresh interval in milliseconds (60 seconds)
 const REFRESH_INTERVAL = 60000;
@@ -97,7 +97,7 @@ async function fetchAllData() {
 async function fetchBTCData() {
     try {
         const url = `${COINGECKO_API}/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=1&page=1&sparkline=false&price_change_percentage=24h`;
-        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + url : url;
+        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + encodeURIComponent(url) : url;
 
         const response = await fetch(fetchUrl);
 
@@ -115,7 +115,7 @@ async function fetchBTCData() {
 async function fetchBTCDominance() {
     try {
         const url = `${COINGECKO_API}/global`;
-        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + url : url;
+        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + encodeURIComponent(url) : url;
 
         const response = await fetch(fetchUrl);
 
@@ -138,7 +138,7 @@ async function fetchBTCDominance() {
 // Fetch Fear & Greed Index from Alternative.me
 async function fetchFearGreedIndex() {
     try {
-        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + FEAR_GREED_API : FEAR_GREED_API;
+        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + encodeURIComponent(FEAR_GREED_API) : FEAR_GREED_API;
         const response = await fetch(fetchUrl);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -154,7 +154,7 @@ async function fetchFearGreedIndex() {
 // Fetch Fear & Greed History
 async function fetchFearGreedHistory() {
     try {
-        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + FEAR_GREED_HISTORY_API : FEAR_GREED_HISTORY_API;
+        const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + encodeURIComponent(FEAR_GREED_HISTORY_API) : FEAR_GREED_HISTORY_API;
         const response = await fetch(fetchUrl);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
