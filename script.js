@@ -67,14 +67,24 @@ async function fetchAllData() {
 // Fetch BTC Price Data from CoinGecko
 async function fetchBTCData() {
     try {
+        // Using the coins/bitcoin endpoint to get complete market data including high/low
         const response = await fetch(
-            `${COINGECKO_API}/simple/price?ids=bitcoin&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true&include_high_low_24h=true`
+            `${COINGECKO_API}/coins/bitcoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`
         );
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
-        return data.bitcoin;
+
+        // Extract and format the data we need
+        const marketData = data.market_data;
+        return {
+            usd: marketData.current_price.usd,
+            usd_24h_change: marketData.price_change_percentage_24h,
+            usd_market_cap: marketData.market_cap.usd,
+            usd_24h_high: marketData.high_24h.usd,
+            usd_24h_low: marketData.low_24h.usd
+        };
     } catch (error) {
         console.error('Error fetching BTC data:', error);
         return null;
@@ -149,7 +159,8 @@ function updateBTCPrice(btcData) {
 function updateBTCDominance(dominanceData) {
     if (!dominanceData) return;
 
-    const btcDominance = dominanceData.btc || 0;
+    // dominanceData is already the percentage number from the API
+    const btcDominance = dominanceData || 0;
     btcDominanceEl.textContent = `${btcDominance.toFixed(2)}%`;
 }
 
