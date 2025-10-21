@@ -52,30 +52,58 @@
                 <div class="card fear-greed-card">
                     <div class="card-header">
                         <h3>Fear & Greed Index</h3>
+                        <div class="view-toggle">
+                            <button class="toggle-btn active" data-view="overview">Overview</button>
+                            <button class="toggle-btn" data-view="timeline">Timeline</button>
+                        </div>
                     </div>
                     <div class="fear-greed-content">
-                        <!-- Minimal Horizontal Slider -->
-                        <div class="slider-container">
-                            <div class="slider-track">
-                                <!-- Left tick mark -->
-                                <div class="tick-mark left"></div>
-
-                                <!-- Center knob -->
-                                <div class="slider-knob" id="sliderKnob"></div>
-
-                                <!-- Right accent bar -->
-                                <div class="accent-bar"></div>
+                        <!-- Gauge View -->
+                        <div class="gauge-view">
+                            <div class="gauge-container">
+                                <svg class="gauge-svg" viewBox="0 0 200 120" id="fearGreedGauge">
+                                    <!-- Gauge will be rendered here -->
+                                </svg>
+                                <div class="gauge-value-display">
+                                    <div class="gauge-number" id="fearGreedValue">--</div>
+                                </div>
                             </div>
-
-                            <!-- Value display -->
-                            <div class="value-display">
-                                <span class="main-value" id="fearGreedValue">--</span>
-                                <span class="superscript">¹</span>
-                            </div>
-
-                            <!-- Sentiment label -->
-                            <div class="sentiment-label" id="fearGreedLabel">--</div>
                         </div>
+
+                        <!-- Timeline View -->
+                        <div class="timeline-view" style="display: none;">
+                            <div class="timeline-item">
+                                <div class="timeline-label">Previous close</div>
+                                <div class="timeline-item-value">
+                                    <span class="sentiment-label" id="timelinePrevLabel">Fear</span>
+                                    <span class="sentiment-badge" id="timelinePrevValue">30</span>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-label">1 week ago</div>
+                                <div class="timeline-item-value">
+                                    <span class="sentiment-label" id="timelineWeekLabel">Fear</span>
+                                    <span class="sentiment-badge" id="timelineWeekValue">31</span>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-label">1 month ago</div>
+                                <div class="timeline-item-value">
+                                    <span class="sentiment-label" id="timelineMonthLabel">Greed</span>
+                                    <span class="sentiment-badge" id="timelineMonthValue">62</span>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-label">1 year ago</div>
+                                <div class="timeline-item-value">
+                                    <span class="sentiment-label" id="timelineYearLabel">Greed</span>
+                                    <span class="sentiment-badge" id="timelineYearValue">69</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sentiment Label -->
+                        <div class="fear-greed-label" id="fearGreedLabel">--</div>
                     </div>
                 </div>
 

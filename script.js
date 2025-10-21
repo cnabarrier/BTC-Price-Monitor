@@ -28,12 +28,11 @@ let lastUpdateTime = null;
 let autoRefreshInterval = null;
 let fearGreedHistory = [];
 let currentView = 'overview';
+let currentFearGreedValue = 0;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     console.log('BTC Price Monitor initialized');
-    console.log('Running on protocol:', window.location.protocol);
-    console.log('Using CORS proxy for file:// protocol:', window.location.protocol === 'file:');
     initializeTheme();
     fetchAllData();
     startAutoRefresh();
@@ -60,7 +59,17 @@ function setupEventListeners() {
             currentView = e.target.dataset.view;
             toggleBtns.forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
-            updateFearGreedDisplay();
+
+            const gaugeView = document.querySelector('.gauge-view');
+            const timelineView = document.querySelector('.timeline-view');
+
+            if (currentView === 'overview') {
+                gaugeView.style.display = 'block';
+                timelineView.style.display = 'none';
+            } else {
+                gaugeView.style.display = 'none';
+                timelineView.style.display = 'flex';
+            }
         });
     });
 }
@@ -69,39 +78,24 @@ function setupEventListeners() {
 async function fetchAllData() {
     try {
         setStatus('loading');
-        console.log('Starting data fetch...');
         const [btcData, dominanceData, fearGreedData] = await Promise.all([
             fetchBTCData(),
             fetchBTCDominance(),
             fetchFearGreedIndex()
         ]);
 
-        console.log('BTC Data:', btcData);
-        console.log('Dominance Data:', dominanceData);
-        console.log('Fear & Greed Data:', fearGreedData);
-
-        if (btcData) {
-            console.log('Updating BTC price...');
-            updateBTCPrice(btcData);
-        }
-        if (dominanceData) {
-            console.log('Updating BTC dominance...');
-            updateBTCDominance(dominanceData);
-        }
+        if (btcData) updateBTCPrice(btcData);
+        if (dominanceData) updateBTCDominance(dominanceData);
         if (fearGreedData) {
-            console.log('Updating Fear & Greed...');
             updateFearGreedDisplay(fearGreedData);
-            // Fetch historical data for timeline
             fetchFearGreedHistory();
         }
 
         updateLastUpdated();
         setStatus('active');
-        console.log('Data fetch complete!');
     } catch (error) {
         console.error('Error fetching data:', error);
         setStatus('error');
-        showError('Failed to fetch data. Retrying...');
     }
 }
 
@@ -109,14 +103,11 @@ async function fetchAllData() {
 async function fetchBTCData() {
     try {
         const url = `${COINGECKO_API}/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=1&page=1&sparkline=false&price_change_percentage=24h`;
-
-        console.log('Fetching BTC data...');
         const response = await fetch(url);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
-        console.log('BTC data received, length:', data.length, data);
 
         if (Array.isArray(data) && data.length > 0) {
             return data[0];
@@ -132,19 +123,13 @@ async function fetchBTCData() {
 async function fetchBTCDominance() {
     try {
         const url = `${COINGECKO_API}/global`;
-        console.log('Fetching BTC dominance...');
-
         const response = await fetch(url);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
-        console.log('Dominance data received:', data);
-
-        // CoinGecko /global endpoint returns market_cap_percentage with btc property
         const dominance = data.data?.market_cap_percentage?.btc;
         if (dominance === undefined || dominance === null) {
-            console.warn('BTC dominance data not available');
             return null;
         }
         return dominance;
@@ -157,13 +142,11 @@ async function fetchBTCDominance() {
 // Fetch Fear & Greed Index from Alternative.me
 async function fetchFearGreedIndex() {
     try {
-        console.log('Fetching Fear & Greed...');
         const response = await fetch(FEAR_GREED_API);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
-        console.log('Fear & Greed data received:', data);
         return data.data[0];
     } catch (error) {
         console.error('Error fetching Fear & Greed Index:', error);
@@ -180,6 +163,7 @@ async function fetchFearGreedHistory() {
 
         const data = await response.json();
         fearGreedHistory = data.data || [];
+        updateTimelineDisplay();
     } catch (error) {
         console.error('Error fetching Fear & Greed history:', error);
     }
@@ -189,21 +173,16 @@ async function fetchFearGreedHistory() {
 function updateBTCPrice(btcData) {
     if (!btcData) return;
 
-    // Price
     const price = btcData.current_price;
     btcPriceEl.textContent = formatCurrency(price);
 
-    // 24h Change
     const change24h = btcData.price_change_percentage_24h;
-    const changeElement = priceChange24hEl;
-
-    changeElement.textContent = `${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%`;
-    changeElement.classList.remove('negative');
+    priceChange24hEl.textContent = `${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%`;
+    priceChange24hEl.classList.remove('negative');
     if (change24h < 0) {
-        changeElement.classList.add('negative');
+        priceChange24hEl.classList.add('negative');
     }
 
-    // 24h High/Low
     if (btcData.high_24h) {
         high24hEl.textContent = `$${formatCurrency(btcData.high_24h)}`;
     }
@@ -211,7 +190,6 @@ function updateBTCPrice(btcData) {
         low24hEl.textContent = `$${formatCurrency(btcData.low_24h)}`;
     }
 
-    // Market Cap
     if (btcData.market_cap) {
         marketCapEl.textContent = formatMarketCap(btcData.market_cap);
     }
@@ -221,11 +199,9 @@ function updateBTCPrice(btcData) {
 function updateBTCDominance(dominanceData) {
     if (dominanceData === null || dominanceData === undefined) return;
 
-    // dominanceData is the percentage value from CoinGecko /global API
     const btcDominance = typeof dominanceData === 'number' ? dominanceData : parseFloat(dominanceData);
 
     if (isNaN(btcDominance)) {
-        console.warn('Invalid BTC dominance value:', dominanceData);
         return;
     }
 
@@ -239,17 +215,158 @@ function updateFearGreedDisplay(fearGreedData) {
     const value = parseInt(fearGreedData.value);
     const classification = fearGreedData.value_classification;
 
+    currentFearGreedValue = value;
     fearGreedValueEl.textContent = value;
     fearGreedLabelEl.textContent = classification;
 
-    // Update slider knob position (0-100 maps to 0-100% width)
-    const knobEl = document.getElementById('sliderKnob');
-    if (knobEl) {
-        const knobTrack = knobEl.parentElement;
-        const trackWidth = knobTrack.offsetWidth;
-        const knobPosition = (value / 100) * (trackWidth - 24); // 24px is knob width
-        knobEl.style.left = `calc(${value}% - 12px)`; // Center the knob
+    // Render gauge
+    renderGauge(value);
+}
+
+// Render Gauge SVG
+function renderGauge(value) {
+    const svg = fearGreedGaugeEl;
+    svg.innerHTML = ''; // Clear previous
+
+    const centerX = 100;
+    const centerY = 100;
+    const radius = 70;
+
+    // Define segments
+    const segments = [
+        { name: 'EXTREME FEAR', start: 0, end: 25, className: 'gauge-segment-extreme-fear' },
+        { name: 'FEAR', start: 25, end: 46, className: 'gauge-segment-fear' },
+        { name: 'NEUTRAL', start: 46, end: 54, className: 'gauge-segment-neutral' },
+        { name: 'GREED', start: 54, end: 75, className: 'gauge-segment-greed' },
+        { name: 'EXTREME GREED', start: 75, end: 100, className: 'gauge-segment-extreme-greed' }
+    ];
+
+    // Draw segments
+    segments.forEach((segment, index) => {
+        const startAngle = 180 - (segment.start * 1.8);
+        const endAngle = 180 - (segment.end * 1.8);
+        const path = createArcPath(centerX, centerY, radius, startAngle, endAngle);
+
+        const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathEl.setAttribute('d', path);
+        pathEl.setAttribute('class', `gauge-segment ${segment.className}`);
+        svg.appendChild(pathEl);
+
+        // Add label
+        const labelAngle = 180 - ((segment.start + segment.end) / 2 * 1.8);
+        const labelRad = (labelAngle * Math.PI) / 180;
+        const labelX = centerX + (radius + 18) * Math.cos(labelRad);
+        const labelY = centerY + (radius + 18) * Math.sin(labelRad);
+
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', labelX);
+        text.setAttribute('y', labelY);
+        text.setAttribute('class', 'gauge-label');
+        text.textContent = segment.name;
+        svg.appendChild(text);
+    });
+
+    // Draw ticks
+    for (let i = 0; i <= 100; i += 25) {
+        const angle = 180 - (i * 1.8);
+        const rad = (angle * Math.PI) / 180;
+
+        const x1 = centerX + (radius - 5) * Math.cos(rad);
+        const y1 = centerY + (radius - 5) * Math.sin(rad);
+        const x2 = centerX + (radius + 5) * Math.cos(rad);
+        const y2 = centerY + (radius + 5) * Math.sin(rad);
+
+        const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        tick.setAttribute('x1', x1);
+        tick.setAttribute('y1', y1);
+        tick.setAttribute('x2', x2);
+        tick.setAttribute('y2', y2);
+        tick.setAttribute('class', 'gauge-tick');
+        svg.appendChild(tick);
     }
+
+    // Draw needle
+    const needleAngle = 180 - (value * 1.8);
+    const needleRad = (needleAngle * Math.PI) / 180;
+    const needleLength = radius - 10;
+    const needleX = centerX + needleLength * Math.cos(needleRad);
+    const needleY = centerY + needleLength * Math.sin(needleRad);
+
+    const needle = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    needle.setAttribute('x1', centerX);
+    needle.setAttribute('y1', centerY);
+    needle.setAttribute('x2', needleX);
+    needle.setAttribute('y2', needleY);
+    needle.setAttribute('class', 'gauge-needle');
+    svg.appendChild(needle);
+
+    // Draw center dot
+    const centerDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    centerDot.setAttribute('cx', centerX);
+    centerDot.setAttribute('cy', centerY);
+    centerDot.setAttribute('r', '6');
+    centerDot.setAttribute('class', 'gauge-center-dot');
+    svg.appendChild(centerDot);
+}
+
+// Create Arc Path
+function createArcPath(centerX, centerY, radius, startDeg, endDeg) {
+    const startRad = (startDeg * Math.PI) / 180;
+    const endRad = (endDeg * Math.PI) / 180;
+
+    const x1 = centerX + radius * Math.cos(startRad);
+    const y1 = centerY + radius * Math.sin(startRad);
+    const x2 = centerX + radius * Math.cos(endRad);
+    const y2 = centerY + radius * Math.sin(endRad);
+
+    const largeArc = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+
+    return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 0 ${x2} ${y2}`;
+}
+
+// Update Timeline Display
+function updateTimelineDisplay() {
+    if (fearGreedHistory.length === 0) return;
+
+    const prev = fearGreedHistory[1] || null;
+    const week = fearGreedHistory[7] || null;
+    const month = fearGreedHistory[30] || null;
+    const year = fearGreedHistory[365] || null;
+
+    updateTimelineItem('Previous close', prev, 'timelinePrevLabel', 'timelinePrevValue');
+    updateTimelineItem('1 week ago', week, 'timelineWeekLabel', 'timelineWeekValue');
+    updateTimelineItem('1 month ago', month, 'timelineMonthLabel', 'timelineMonthValue');
+    updateTimelineItem('1 year ago', year, 'timelineYearLabel', 'timelineYearValue');
+}
+
+// Update Timeline Item
+function updateTimelineItem(label, data, labelId, valueId) {
+    const labelEl = document.getElementById(labelId);
+    const valueEl = document.getElementById(valueId);
+
+    if (!data) {
+        if (valueEl) valueEl.textContent = '--';
+        if (labelEl) labelEl.textContent = '--';
+        return;
+    }
+
+    const value = parseInt(data.value);
+    const classification = data.value_classification;
+
+    if (labelEl) labelEl.textContent = classification;
+    if (valueEl) {
+        valueEl.textContent = value;
+        valueEl.className = 'sentiment-badge ' + getSentimentBadgeClass(value);
+    }
+}
+
+// Get Sentiment Badge Class
+function getSentimentBadgeClass(value) {
+    if (value <= 25) return 'badge-extreme-fear';
+    if (value <= 46) return 'badge-fear';
+    if (value <= 54) return 'badge-neutral';
+    if (value <= 75) return 'badge-greed';
+    return 'badge-extreme-greed';
 }
 
 // Update Last Updated Time
@@ -268,11 +385,6 @@ function setStatus(status) {
     } else if (status === 'loading') {
         statusIndicator.classList.remove('active');
     }
-}
-
-// Show Error Message
-function showError(message) {
-    console.warn(message);
 }
 
 // Utility Functions
