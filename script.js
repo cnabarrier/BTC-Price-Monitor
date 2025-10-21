@@ -35,6 +35,8 @@ let currentView = 'overview';
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     console.log('BTC Price Monitor initialized');
+    console.log('Running on protocol:', window.location.protocol);
+    console.log('Using CORS proxy for file:// protocol:', window.location.protocol === 'file:');
     initializeTheme();
     fetchAllData();
     startAutoRefresh();
@@ -70,15 +72,27 @@ function setupEventListeners() {
 async function fetchAllData() {
     try {
         setStatus('loading');
+        console.log('Starting data fetch...');
         const [btcData, dominanceData, fearGreedData] = await Promise.all([
             fetchBTCData(),
             fetchBTCDominance(),
             fetchFearGreedIndex()
         ]);
 
-        if (btcData) updateBTCPrice(btcData);
-        if (dominanceData) updateBTCDominance(dominanceData);
+        console.log('BTC Data:', btcData);
+        console.log('Dominance Data:', dominanceData);
+        console.log('Fear & Greed Data:', fearGreedData);
+
+        if (btcData) {
+            console.log('Updating BTC price...');
+            updateBTCPrice(btcData);
+        }
+        if (dominanceData) {
+            console.log('Updating BTC dominance...');
+            updateBTCDominance(dominanceData);
+        }
         if (fearGreedData) {
+            console.log('Updating Fear & Greed...');
             updateFearGreedDisplay(fearGreedData);
             // Fetch historical data for timeline
             fetchFearGreedHistory();
@@ -86,6 +100,7 @@ async function fetchAllData() {
 
         updateLastUpdated();
         setStatus('active');
+        console.log('Data fetch complete!');
     } catch (error) {
         console.error('Error fetching data:', error);
         setStatus('error');
@@ -99,11 +114,13 @@ async function fetchBTCData() {
         const url = `${COINGECKO_API}/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=1&page=1&sparkline=false&price_change_percentage=24h`;
         const fetchUrl = window.location.protocol === 'file:' ? CORS_PROXY + encodeURIComponent(url) : url;
 
+        console.log('Fetching BTC data from:', fetchUrl.substring(0, 80) + '...');
         const response = await fetch(fetchUrl);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
+        console.log('BTC data received:', data);
         return data[0];
     } catch (error) {
         console.error('Error fetching BTC data:', error);
