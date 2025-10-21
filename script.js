@@ -91,8 +91,8 @@ async function fetchBTCDominance() {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
-        // CoinGecko returns btc_market_cap_percentage as a decimal value in the data object
-        const dominance = data.data?.btc_market_cap_percentage;
+        // CoinGecko /global endpoint returns market_cap_percentage with btc property
+        const dominance = data.data?.market_cap_percentage?.btc;
         if (dominance === undefined || dominance === null) {
             console.warn('BTC dominance data not available');
             return null;
