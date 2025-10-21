@@ -230,65 +230,66 @@ function renderGauge(value) {
 
     const centerX = 100;
     const centerY = 100;
-    const radius = 70;
+    const radius = 65;
+    const strokeWidth = 18;
 
-    // Define segments
+    // Define segments with proper colors
     const segments = [
-        { name: 'EXTREME FEAR', start: 0, end: 25, className: 'gauge-segment-extreme-fear' },
-        { name: 'FEAR', start: 25, end: 46, className: 'gauge-segment-fear' },
-        { name: 'NEUTRAL', start: 46, end: 54, className: 'gauge-segment-neutral' },
-        { name: 'GREED', start: 54, end: 75, className: 'gauge-segment-greed' },
-        { name: 'EXTREME GREED', start: 75, end: 100, className: 'gauge-segment-extreme-greed' }
+        { name: 'EXTREME FEAR', start: 0, end: 25, color: '#a8a8a8' },      // Grey stone
+        { name: 'FEAR', start: 25, end: 46, color: '#f5b89d' },              // Peach-orange
+        { name: 'NEUTRAL', start: 46, end: 54, color: '#d4d0c8' },           // Beige
+        { name: 'GREED', start: 54, end: 75, color: '#4ecdc4' },             // Teal
+        { name: 'EXTREME GREED', start: 75, end: 100, color: '#2ecc71' }    // Green
     ];
 
-    // Draw segments
-    segments.forEach((segment, index) => {
+    // Draw background track
+    const bgPath = createArcPath(centerX, centerY, radius, 180, 0);
+    const bgTrack = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    bgTrack.setAttribute('d', bgPath);
+    bgTrack.setAttribute('class', 'gauge-background');
+    bgTrack.setAttribute('stroke-width', strokeWidth);
+    bgTrack.setAttribute('stroke', '#2a2a2a');
+    bgTrack.setAttribute('fill', 'none');
+    svg.appendChild(bgTrack);
+
+    // Draw colored segments
+    segments.forEach((segment) => {
         const startAngle = 180 - (segment.start * 1.8);
         const endAngle = 180 - (segment.end * 1.8);
         const path = createArcPath(centerX, centerY, radius, startAngle, endAngle);
 
-        const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        pathEl.setAttribute('d', path);
-        pathEl.setAttribute('class', `gauge-segment ${segment.className}`);
-        svg.appendChild(pathEl);
+        const segmentEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        segmentEl.setAttribute('d', path);
+        segmentEl.setAttribute('stroke-width', strokeWidth);
+        segmentEl.setAttribute('stroke', segment.color);
+        segmentEl.setAttribute('fill', 'none');
+        segmentEl.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(segmentEl);
+    });
 
-        // Add label
-        const labelAngle = 180 - ((segment.start + segment.end) / 2 * 1.8);
-        const labelRad = (labelAngle * Math.PI) / 180;
-        const labelX = centerX + (radius + 18) * Math.cos(labelRad);
-        const labelY = centerY + (radius + 18) * Math.sin(labelRad);
+    // Draw scale labels (0, 25, 50, 75, 100)
+    for (let i = 0; i <= 100; i += 25) {
+        const angle = 180 - (i * 1.8);
+        const rad = (angle * Math.PI) / 180;
+        const labelRadius = radius - 32;
+
+        const labelX = centerX + labelRadius * Math.cos(rad);
+        const labelY = centerY + labelRadius * Math.sin(rad);
 
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         text.setAttribute('x', labelX);
         text.setAttribute('y', labelY);
-        text.setAttribute('class', 'gauge-label');
-        text.textContent = segment.name;
+        text.setAttribute('class', 'gauge-number-label');
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('dominant-baseline', 'middle');
+        text.textContent = i;
         svg.appendChild(text);
-    });
-
-    // Draw ticks
-    for (let i = 0; i <= 100; i += 25) {
-        const angle = 180 - (i * 1.8);
-        const rad = (angle * Math.PI) / 180;
-
-        const x1 = centerX + (radius - 5) * Math.cos(rad);
-        const y1 = centerY + (radius - 5) * Math.sin(rad);
-        const x2 = centerX + (radius + 5) * Math.cos(rad);
-        const y2 = centerY + (radius + 5) * Math.sin(rad);
-
-        const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        tick.setAttribute('x1', x1);
-        tick.setAttribute('y1', y1);
-        tick.setAttribute('x2', x2);
-        tick.setAttribute('y2', y2);
-        tick.setAttribute('class', 'gauge-tick');
-        svg.appendChild(tick);
     }
 
     // Draw needle
     const needleAngle = 180 - (value * 1.8);
     const needleRad = (needleAngle * Math.PI) / 180;
-    const needleLength = radius - 10;
+    const needleLength = radius - 20;
     const needleX = centerX + needleLength * Math.cos(needleRad);
     const needleY = centerY + needleLength * Math.sin(needleRad);
 
@@ -298,14 +299,19 @@ function renderGauge(value) {
     needle.setAttribute('x2', needleX);
     needle.setAttribute('y2', needleY);
     needle.setAttribute('class', 'gauge-needle');
+    needle.setAttribute('stroke-width', '3');
+    needle.setAttribute('stroke', '#000000');
+    needle.setAttribute('stroke-linecap', 'round');
     svg.appendChild(needle);
 
     // Draw center dot
     const centerDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     centerDot.setAttribute('cx', centerX);
     centerDot.setAttribute('cy', centerY);
-    centerDot.setAttribute('r', '6');
-    centerDot.setAttribute('class', 'gauge-center-dot');
+    centerDot.setAttribute('r', '7');
+    centerDot.setAttribute('fill', '#ffffff');
+    centerDot.setAttribute('stroke', '#333333');
+    centerDot.setAttribute('stroke-width', '2');
     svg.appendChild(centerDot);
 }
 
