@@ -1,0 +1,348 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #f7931a;
+    --primary-dark: #e68600;
+    --bg-dark: #0f0f0f;
+    --bg-secondary: #1a1a1a;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0b0;
+    --border-color: #333333;
+    --success: #2ecc71;
+    --danger: #e74c3c;
+    --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --transition: all 0.3s ease;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1a2e 100%);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 30px 0 20px 0;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+    letter-spacing: -0.5px;
+}
+
+.subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 300;
+}
+
+/* Main Content */
+main {
+    flex: 1;
+}
+
+/* Cards */
+.card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition);
+}
+
+.card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 8px 32px rgba(247, 147, 26, 0.1), var(--card-shadow);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.card-header h2,
+.card-header h3 {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Price Card */
+.price-card {
+    margin-bottom: 30px;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(247, 147, 26, 0.05) 100%);
+}
+
+.price-display {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 20px 0;
+}
+
+.price-display .currency {
+    font-size: 2rem;
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.price-display .amount {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.price-change {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.change-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(46, 204, 113, 0.1);
+    color: var(--success);
+}
+
+.change-value.negative {
+    background: rgba(231, 76, 60, 0.1);
+    color: var(--danger);
+}
+
+.change-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Status Indicator */
+.status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--danger);
+    animation: pulse 2s infinite;
+}
+
+.status-indicator.active {
+    background: var(--success);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 16px 0;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+/* Range Container */
+.range-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.range-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: rgba(247, 147, 26, 0.05);
+    border-radius: 8px;
+}
+
+.range-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.range-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Last Updated */
+.last-updated {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.refresh-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: var(--transition);
+}
+
+.refresh-btn:hover {
+    border-color: var(--primary-color);
+    background: rgba(247, 147, 26, 0.1);
+    transform: rotate(180deg);
+}
+
+.refresh-btn:active {
+    transform: rotate(180deg) scale(0.95);
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 20px 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 40px;
+}
+
+/* Error State */
+.error {
+    padding: 16px;
+    background: rgba(231, 76, 60, 0.1);
+    border: 1px solid var(--danger);
+    border-radius: 8px;
+    color: var(--danger);
+    text-align: center;
+    margin: 20px 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.8rem;
+    }
+
+    .price-display .amount {
+        font-size: 2.5rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+    }
+
+    .card {
+        padding: 16px;
+    }
+
+    .container {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    header h1 {
+        font-size: 1.5rem;
+        margin-bottom: 8px;
+    }
+
+    .subtitle {
+        font-size: 0.85rem;
+    }
+
+    .price-display .amount {
+        font-size: 2rem;
+    }
+
+    .price-display .currency {
+        font-size: 1.5rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .card {
+        padding: 12px;
+    }
+
+    .container {
+        padding: 12px;
+    }
+
+    .range-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+}

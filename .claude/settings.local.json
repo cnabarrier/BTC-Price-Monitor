@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: Create BTC Price Monitor web app\n\n- Add responsive HTML structure with semantic markup\n- Implement modern dark-themed CSS design with animations\n- Integrate CoinGecko and Alternative.me APIs\n- Display BTC price, 24h change, market cap, dominance, and fear & greed index\n- Auto-refresh data every 60 seconds\n- Mobile-friendly responsive layout\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git config:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

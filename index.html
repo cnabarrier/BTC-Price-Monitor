@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Price Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>₿ BTC Price Monitor</h1>
+            <p class="subtitle">Real-time Bitcoin Price Tracking</p>
+        </header>
+
+        <main>
+            <!-- BTC Price Card -->
+            <div class="card price-card">
+                <div class="card-header">
+                    <h2>Bitcoin Price</h2>
+                    <span class="status-indicator" id="statusIndicator"></span>
+                </div>
+                <div class="price-display">
+                    <span class="currency">$</span>
+                    <span class="amount" id="btcPrice">--</span>
+                </div>
+                <div class="price-change">
+                    <span id="priceChange24h" class="change-value">--</span>
+                    <span class="change-label">(24h)</span>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <!-- BTC Dominance Card -->
+                <div class="card stat-card">
+                    <div class="card-header">
+                        <h3>BTC Dominance</h3>
+                    </div>
+                    <div class="stat-value" id="btcDominance">--</div>
+                    <div class="stat-label">Market Share</div>
+                </div>
+
+                <!-- Fear & Greed Index Card -->
+                <div class="card stat-card">
+                    <div class="card-header">
+                        <h3>Fear & Greed Index</h3>
+                    </div>
+                    <div class="stat-value" id="fearGreedValue">--</div>
+                    <div class="stat-label" id="fearGreedLabel">--</div>
+                </div>
+
+                <!-- 24h High/Low Card -->
+                <div class="card stat-card">
+                    <div class="card-header">
+                        <h3>24h Range</h3>
+                    </div>
+                    <div class="range-container">
+                        <div class="range-item">
+                            <span class="range-label">High:</span>
+                            <span class="range-value" id="high24h">$--</span>
+                        </div>
+                        <div class="range-item">
+                            <span class="range-label">Low:</span>
+                            <span class="range-value" id="low24h">$--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Market Cap Card -->
+                <div class="card stat-card">
+                    <div class="card-header">
+                        <h3>Market Cap</h3>
+                    </div>
+                    <div class="stat-value" id="marketCap">--</div>
+                    <div class="stat-label">USD</div>
+                </div>
+            </div>
+
+            <!-- Last Updated -->
+            <div class="last-updated">
+                Last updated: <span id="lastUpdated">--</span>
+                <button id="refreshBtn" class="refresh-btn" title="Refresh now">⟳</button>
+            </div>
+        </main>
+
+        <footer>
+            <p>Data sourced from CoinGecko API | Updates every 60 seconds</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
