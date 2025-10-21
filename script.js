@@ -1,7 +1,7 @@
 // API Configuration
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 const FEAR_GREED_API = 'https://api.alternative.me/fng/?limit=1';
-const FEAR_GREED_API_HISTORICAL = 'https://api.alternative.me/fng/?limit=370'; // ~1 year of data
+const FEAR_GREED_HISTORY_API = 'https://api.alternative.me/fng/?limit=370';
 
 // Refresh interval in milliseconds (60 seconds)
 const REFRESH_INTERVAL = 60000;
@@ -20,10 +20,14 @@ const refreshBtn = document.getElementById('refreshBtn');
 const statusIndicator = document.getElementById('statusIndicator');
 const themeToggleBtn = document.getElementById('themeToggle');
 const themeIcon = document.querySelector('.theme-icon');
+const fearGreedGaugeEl = document.getElementById('fearGreedGauge');
+const toggleBtns = document.querySelectorAll('.toggle-btn');
 
 // State
 let lastUpdateTime = null;
 let autoRefreshInterval = null;
+let fearGreedHistory = [];
+let currentView = 'overview';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -47,23 +51,35 @@ function setupEventListeners() {
     if (themeToggleBtn) {
         themeToggleBtn.addEventListener('click', toggleTheme);
     }
+
+    // View toggle buttons
+    toggleBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            currentView = e.target.dataset.view;
+            toggleBtns.forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            updateFearGreedDisplay();
+        });
+    });
 }
 
 // Fetch all data
 async function fetchAllData() {
     try {
         setStatus('loading');
-        const [btcData, dominanceData, fearGreedData, fearGreedHistorical] = await Promise.all([
+        const [btcData, dominanceData, fearGreedData] = await Promise.all([
             fetchBTCData(),
             fetchBTCDominance(),
-            fetchFearGreedIndex(),
-            fetchFearGreedHistorical()
+            fetchFearGreedIndex()
         ]);
 
         if (btcData) updateBTCPrice(btcData);
         if (dominanceData) updateBTCDominance(dominanceData);
-        if (fearGreedData) updateFearGreedIndex(fearGreedData);
-        if (fearGreedHistorical) updateFearGreedTimeline(fearGreedHistorical);
+        if (fearGreedData) {
+            updateFearGreedDisplay(fearGreedData);
+            // Fetch historical data for timeline
+            fetchFearGreedHistory();
+        }
 
         updateLastUpdated();
         setStatus('active');
@@ -84,7 +100,7 @@ async function fetchBTCData() {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
-        return data[0]; // Returns array with single bitcoin object
+        return data[0];
     } catch (error) {
         console.error('Error fetching BTC data:', error);
         return null;
@@ -129,18 +145,17 @@ async function fetchFearGreedIndex() {
     }
 }
 
-// Fetch historical Fear & Greed Index data
-async function fetchFearGreedHistorical() {
+// Fetch Fear & Greed History
+async function fetchFearGreedHistory() {
     try {
-        const response = await fetch(FEAR_GREED_API_HISTORICAL);
+        const response = await fetch(FEAR_GREED_HISTORY_API);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
-        return data.data; // Returns array of historical data
+        fearGreedHistory = data.data || [];
     } catch (error) {
-        console.error('Error fetching historical Fear & Greed Index:', error);
-        return null;
+        console.error('Error fetching Fear & Greed history:', error);
     }
 }
 
@@ -191,219 +206,182 @@ function updateBTCDominance(dominanceData) {
     btcDominanceEl.textContent = `${btcDominance.toFixed(2)}%`;
 }
 
-// Update Fear & Greed Index Display
-function updateFearGreedIndex(fearGreedData) {
-    if (!fearGreedData) return;
+// Update Fear & Greed Display
+function updateFearGreedDisplay(fearGreedData) {
+    if (!fearGreedData && currentView === 'overview') return;
 
+    if (currentView === 'overview') {
+        displayGaugeOverview(fearGreedData);
+    } else {
+        displayTimelineView();
+    }
+}
+
+// Display Gauge Overview
+function displayGaugeOverview(fearGreedData) {
     const value = parseInt(fearGreedData.value);
     const classification = fearGreedData.value_classification;
 
     fearGreedValueEl.textContent = value;
     fearGreedLabelEl.textContent = classification;
 
-    // Render the gauge
+    // Render gauge
     renderFearGreedGauge(value);
-
-    // Color code the fear and greed index
-    updateFearGreedColor(value);
 }
 
-// Color code Fear & Greed Index
-function updateFearGreedColor(value) {
-    const fearGreedCard = fearGreedValueEl.closest('.card');
-    if (!fearGreedCard) return;
-
-    fearGreedCard.style.borderColor = 'var(--border-color)';
-
-    if (value <= 25) {
-        fearGreedCard.style.borderTopColor = '#e74c3c'; // Red
-    } else if (value <= 46) {
-        fearGreedCard.style.borderTopColor = '#f39c12'; // Orange
-    } else if (value <= 54) {
-        fearGreedCard.style.borderTopColor = '#f1c40f'; // Yellow
-    } else if (value <= 75) {
-        fearGreedCard.style.borderTopColor = '#27ae60'; // Light Green
-    } else {
-        fearGreedCard.style.borderTopColor = '#2ecc71'; // Green
-    }
-}
-
-// Update Fear & Greed Timeline
-function updateFearGreedTimeline(historicalData) {
-    if (!historicalData || !Array.isArray(historicalData)) return;
-
-    // Helper function to find data by days ago
-    const findDataByDaysAgo = (daysAgo) => {
-        // The API returns data sorted by date (most recent first)
-        // Index 0 is today, index 1 is yesterday, etc.
-        if (daysAgo < historicalData.length) {
-            return historicalData[daysAgo];
-        }
-        return null;
-    };
-
-    // Helper function to format timeline value
-    const formatTimelineValue = (data) => {
-        if (!data) return '--';
-        const value = parseInt(data.value);
-        const classification = data.value_classification;
-        return `${classification} (${value})`;
-    };
-
-    // Update timeline items
-    const previousClose = findDataByDaysAgo(1); // Yesterday
-    const oneWeekAgo = findDataByDaysAgo(7); // 7 days ago
-    const oneMonthAgo = findDataByDaysAgo(30); // 30 days ago
-    const oneYearAgo = findDataByDaysAgo(365); // 365 days ago
-
-    document.getElementById('fearGreedPrevious').textContent = formatTimelineValue(previousClose);
-    document.getElementById('fearGreed1Week').textContent = formatTimelineValue(oneWeekAgo);
-    document.getElementById('fearGreed1Month').textContent = formatTimelineValue(oneMonthAgo);
-    document.getElementById('fearGreed1Year').textContent = formatTimelineValue(oneYearAgo);
-
-    // Color code timeline items based on sentiment
-    colorCodeTimelineItem('fearGreedPrevious', previousClose);
-    colorCodeTimelineItem('fearGreed1Week', oneWeekAgo);
-    colorCodeTimelineItem('fearGreed1Month', oneMonthAgo);
-    colorCodeTimelineItem('fearGreed1Year', oneYearAgo);
-}
-
-// Color code timeline item based on value
-function colorCodeTimelineItem(elementId, data) {
-    if (!data) return;
-
-    const element = document.getElementById(elementId);
-    if (!element) return;
-
-    const value = parseInt(data.value);
-    const parent = element.closest('.timeline-item');
-    if (!parent) return;
-
-    let color = '#f7931a'; // Default
-
-    if (value <= 25) {
-        color = '#e74c3c'; // Extreme Fear - Red
-    } else if (value <= 46) {
-        color = '#f39c12'; // Fear - Orange
-    } else if (value <= 54) {
-        color = '#f1c40f'; // Neutral - Yellow
-    } else if (value <= 75) {
-        color = '#27ae60'; // Greed - Light Green
-    } else {
-        color = '#2ecc71'; // Extreme Greed - Green
-    }
-
-    parent.style.borderLeftColor = color;
-}
-
-// Render the semi-circular Fear & Greed gauge
+// Render Fear & Greed Gauge
 function renderFearGreedGauge(value) {
-    const svg = document.getElementById('fearGreedGauge');
-    if (!svg) return;
-
-    // Clear existing content
-    svg.innerHTML = '';
+    const svg = fearGreedGaugeEl;
+    svg.innerHTML = ''; // Clear previous gauge
 
     const centerX = 100;
     const centerY = 100;
     const radius = 80;
-    const strokeWidth = 20;
+    const startAngle = 180; // Left side (π radians)
+    const endAngle = 0; // Right side
 
-    // Define gauge segments: [startValue, endValue, color, label]
+    // Create segment groups
     const segments = [
-        { start: 0, end: 25, color: '#e74c3c', label: 'Extreme Fear' },
-        { start: 25, end: 46, color: '#f39c12', label: 'Fear' },
-        { start: 46, end: 54, color: '#f1c40f', label: 'Neutral' },
-        { start: 54, end: 75, color: '#27ae60', label: 'Greed' },
-        { start: 75, end: 100, color: '#2ecc71', label: 'Extreme Greed' }
+        { name: 'Extreme Fear', range: [0, 25], className: 'gauge-extreme-fear', startDeg: 180, endDeg: 144 },
+        { name: 'Fear', range: [25, 46], className: 'gauge-fear', startDeg: 144, endDeg: 110.4 },
+        { name: 'Neutral', range: [46, 54], className: 'gauge-neutral', startDeg: 110.4, endDeg: 93.6 },
+        { name: 'Greed', range: [54, 75], className: 'gauge-greed', startDeg: 93.6, endDeg: 39.6 },
+        { name: 'Extreme Greed', range: [75, 100], className: 'gauge-extreme-greed', startDeg: 39.6, endDeg: 0 }
     ];
 
-    // Create gauge segments
+    // Draw segments
     segments.forEach(segment => {
-        const startAngle = valueToAngle(segment.start);
-        const endAngle = valueToAngle(segment.end);
-        const path = createArcPath(centerX, centerY, radius, startAngle, endAngle);
-
-        const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        pathElement.setAttribute('d', path);
-        pathElement.setAttribute('fill', 'none');
-        pathElement.setAttribute('stroke', segment.color);
-        pathElement.setAttribute('stroke-width', strokeWidth);
-        pathElement.setAttribute('stroke-linecap', 'round');
-        pathElement.setAttribute('class', 'gauge-segment');
-
-        // Add title for accessibility
-        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-        title.textContent = `${segment.label}: ${segment.start}-${segment.end}`;
-        pathElement.appendChild(title);
-
-        svg.appendChild(pathElement);
+        const path = createArcPath(centerX, centerY, radius, segment.startDeg, segment.endDeg);
+        const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathEl.setAttribute('d', path);
+        pathEl.setAttribute('class', `gauge-segment ${segment.className}`);
+        pathEl.setAttribute('fill-opacity', '1');
+        svg.appendChild(pathEl);
     });
 
-    // Draw needle
-    const needleAngle = valueToAngle(value);
-    const needleLength = radius - strokeWidth / 2;
-    const needleEndX = centerX + needleLength * Math.cos(needleAngle);
-    const needleEndY = centerY + needleLength * Math.sin(needleAngle);
+    // Draw tick marks and labels
+    drawTickMarks(svg, centerX, centerY, radius);
 
-    // Needle line
+    // Draw needle
+    const needleAngle = 180 - (value * 1.8); // Map 0-100 to 180-0 degrees
+    const needleLength = radius - 15;
+    const needleEndX = centerX + needleLength * Math.cos((needleAngle * Math.PI) / 180);
+    const needleEndY = centerY + needleLength * Math.sin((needleAngle * Math.PI) / 180);
+
     const needle = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     needle.setAttribute('x1', centerX);
     needle.setAttribute('y1', centerY);
     needle.setAttribute('x2', needleEndX);
     needle.setAttribute('y2', needleEndY);
-    needle.setAttribute('stroke', '#f7931a');
-    needle.setAttribute('stroke-width', '3');
-    needle.setAttribute('stroke-linecap', 'round');
     needle.setAttribute('class', 'gauge-needle');
+    needle.setAttribute('id', 'fearGreedNeedle');
     svg.appendChild(needle);
 
-    // Needle center circle
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', centerX);
-    circle.setAttribute('cy', centerY);
-    circle.setAttribute('r', '6');
-    circle.setAttribute('fill', '#f7931a');
-    svg.appendChild(circle);
-
-    // Add segment labels
-    const labelRadius = radius + 15;
-    segments.forEach(segment => {
-        const midValue = (segment.start + segment.end) / 2;
-        const midAngle = valueToAngle(midValue);
-        const labelX = centerX + labelRadius * Math.cos(midAngle);
-        const labelY = centerY + labelRadius * Math.sin(midAngle);
-
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', labelX);
-        text.setAttribute('y', labelY);
-        text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('dominant-baseline', 'middle');
-        text.setAttribute('fill', 'var(--text-secondary)');
-        text.setAttribute('font-size', '8');
-        text.setAttribute('font-weight', '600');
-        text.textContent = segment.label.split(' ')[segment.label.split(' ').length - 1]; // Last word only
-        svg.appendChild(text);
-    });
+    // Draw center hub
+    const hubCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    hubCircle.setAttribute('cx', centerX);
+    hubCircle.setAttribute('cy', centerY);
+    hubCircle.setAttribute('r', '8');
+    hubCircle.setAttribute('class', 'gauge-hub-circle');
+    svg.appendChild(hubCircle);
 }
 
-// Convert value (0-100) to angle in radians for semi-circle
-function valueToAngle(value) {
-    // Map 0-100 to π (180°) to 0 (for left-to-right arc)
-    // Starting from left (π radians) to right (0 radians)
-    return Math.PI - (value / 100) * Math.PI;
+// Create Arc Path for gauge segment
+function createArcPath(centerX, centerY, radius, startDeg, endDeg) {
+    const startRad = (startDeg * Math.PI) / 180;
+    const endRad = (endDeg * Math.PI) / 180;
+
+    const x1 = centerX + radius * Math.cos(startRad);
+    const y1 = centerY + radius * Math.sin(startRad);
+    const x2 = centerX + radius * Math.cos(endRad);
+    const y2 = centerY + radius * Math.sin(endRad);
+
+    const largeArc = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+
+    return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 0 ${x2} ${y2}`;
 }
 
-// Create SVG arc path
-function createArcPath(centerX, centerY, radius, startAngle, endAngle) {
-    const startX = centerX + radius * Math.cos(startAngle);
-    const startY = centerY + radius * Math.sin(startAngle);
-    const endX = centerX + radius * Math.cos(endAngle);
-    const endY = centerY + radius * Math.sin(endAngle);
+// Draw tick marks
+function drawTickMarks(svg, centerX, centerY, radius) {
+    const tickRadius = radius + 10;
+    const labelRadius = radius + 25;
 
-    const largeArcFlag = Math.abs(endAngle - startAngle) > Math.PI ? 1 : 0;
+    // Draw 5-point increments
+    for (let i = 0; i <= 100; i += 5) {
+        const angle = 180 - (i * 1.8); // Map to degrees
+        const rad = (angle * Math.PI) / 180;
 
-    return `M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`;
+        // Every 25 points, draw longer tick and label
+        if (i % 25 === 0) {
+            const x1 = centerX + (radius - 8) * Math.cos(rad);
+            const y1 = centerY + (radius - 8) * Math.sin(rad);
+            const x2 = centerX + (radius + 8) * Math.cos(rad);
+            const y2 = centerY + (radius + 8) * Math.sin(rad);
+
+            const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            tick.setAttribute('x1', x1);
+            tick.setAttribute('y1', y1);
+            tick.setAttribute('x2', x2);
+            tick.setAttribute('y2', y2);
+            tick.setAttribute('class', 'gauge-ticks');
+            svg.appendChild(tick);
+
+            // Add label
+            const labelX = centerX + labelRadius * Math.cos(rad);
+            const labelY = centerY + labelRadius * Math.sin(rad);
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', labelX);
+            text.setAttribute('y', labelY);
+            text.setAttribute('class', 'gauge-tick-label');
+            text.textContent = i;
+            svg.appendChild(text);
+        }
+    }
+}
+
+// Display Timeline View
+function displayTimelineView() {
+    const timelineContainer = document.querySelector('.timeline-container');
+    if (!timelineContainer) return;
+
+    // Get specific historical points
+    const current = fearGreedHistory[0]; // Today
+    const prevClose = fearGreedHistory[1]; // Yesterday
+    const oneWeekAgo = fearGreedHistory[7]; // 1 week
+    const oneMonthAgo = fearGreedHistory[30]; // 1 month
+    const oneYearAgo = fearGreedHistory[365]; // 1 year (or closest available)
+
+    // Update timeline items
+    updateTimelineItem(document.getElementById('fearGreedPrevious'), prevClose);
+    updateTimelineItem(document.getElementById('fearGreed1Week'), oneWeekAgo);
+    updateTimelineItem(document.getElementById('fearGreed1Month'), oneMonthAgo);
+    updateTimelineItem(document.getElementById('fearGreed1Year'), oneYearAgo);
+}
+
+// Update Timeline Item
+function updateTimelineItem(element, data) {
+    if (!element || !data) {
+        if (element) element.innerHTML = '<span class="timeline-value-text">--</span>';
+        return;
+    }
+
+    const value = parseInt(data.value);
+    const classification = data.value_classification;
+    const badgeClass = getSentimentBadgeClass(value);
+
+    element.innerHTML = `
+        <span class="timeline-value-text">${value}</span>
+        <span class="sentiment-badge ${badgeClass}">${classification}</span>
+    `;
+}
+
+// Get Sentiment Badge Class
+function getSentimentBadgeClass(value) {
+    if (value <= 25) return 'badge-extreme-fear';
+    if (value <= 46) return 'badge-fear';
+    if (value <= 54) return 'badge-neutral';
+    if (value <= 75) return 'badge-greed';
+    return 'badge-extreme-greed';
 }
 
 // Update Last Updated Time
@@ -426,7 +404,6 @@ function setStatus(status) {
 
 // Show Error Message
 function showError(message) {
-    // Could be enhanced to show error UI
     console.warn(message);
 }
 
